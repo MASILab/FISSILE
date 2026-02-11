@@ -30,6 +30,10 @@ function Xl_m = nnMpEvenRotationMatrix(euler_m, l)
 % Derived parameters:
 Nf = size(euler_m, 1);
 
+idx = 1:(2*l+1);
+isEven = mod(idx,2)==0;
+isOdd = ~isEven;
+
 % Loop over fiber-frames:
 Xl_m = [];
 for fIndex = 1:Nf
@@ -55,23 +59,23 @@ for fIndex = 1:Nf
                 Rl_m(1,1) = DlmPm;
             elseif (row == 1 && col > 1)    % For clarity.
                 % Eq. (B.22):
-                Rl_m(1, col) = 2*real(DlmPm)*iseven(col) ...
-                    + 2*imag(DlmPm)*isodd(col);
-            elseif (row > 1 && iseven(row) && col == 1) % For clarity.
+                Rl_m(1, col) = 2*real(DlmPm)*isEven(col) ...
+                    + 2*imag(DlmPm)*isOdd(col);
+            elseif (row > 1 && isEven(row) && col == 1) % For clarity.
                 % Eq. (B.25),  simplified:
                 Rl_m(row, 1) = real(DlmPm);
-            elseif (row > 1 && iseven(row) && col > 1)  % For clarity.
+            elseif (row > 1 && isEven(row) && col > 1)  % For clarity.
                 % Eq. (B.26), simplified:
-                Rl_m(row, col) = real(DlmPm + ((-1)^mPrime)*DlnmPm)*iseven(col) ...
-                    + imag(DlmPm - ((-1)^mPrime)*DlnmPm)*isodd(col);
-            elseif (row > 1 && isodd(row) && col == 1)  % For clarity.
+                Rl_m(row, col) = real(DlmPm + ((-1)^mPrime)*DlnmPm)*isEven(col) ...
+                    + imag(DlmPm - ((-1)^mPrime)*DlnmPm)*isOdd(col);
+            elseif (row > 1 && isOdd(row) && col == 1)  % For clarity.
                 % Eq. (B.27), simplified:
                 Rl_m(row, 1) = -imag(DlmPm);
-            elseif (row > 1 && isodd(row) && col > 1)   % For clarity.
+            elseif (row > 1 && isOdd(row) && col > 1)   % For clarity.
                 % Eq. (B.28), simplified:
-                Rl_m(row, col) = -imag(DlmPm + ((-1)^mPrime)*DlnmPm)*iseven(col) ...
-                    + real(DlmPm - ((-1)^mPrime)*DlnmPm)*isodd(col); 
-            end % End of row,col IF/ELSEIF.           
+                Rl_m(row, col) = -imag(DlmPm + ((-1)^mPrime)*DlnmPm)*isEven(col) ...
+                    + real(DlmPm - ((-1)^mPrime)*DlnmPm)*isOdd(col); 
+            end % End of row,col IF/ELSEIF.                
         end     % End of col FOR.
     end         % End of row FOR.
     % Append Rl_m for current fiber-frame to Xl_m:
