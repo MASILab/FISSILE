@@ -28,6 +28,11 @@ if (size(gamma_v, 1) < size(gamma_v, 2))
     gamma_v = gamma_v.';
 end
 
+persistent fac
+if isempty(fac)
+    fac = factorial(0:20);
+end
+
 % Find d:
 switch alg_s
     case 'Rose_4.14'
@@ -62,14 +67,19 @@ switch alg_s
         dSum_v = zeros(size(beta_v));
         for kappaIndex = 1:length(kappa_v)
             kappa = kappa_v(kappaIndex);
-            term_v = (-1)^kappa * cos(beta_v/2).^(2*l+m-mPrime-2*kappa) .* ...
+            if kappaIndex == 1
+                term_v = (-1)^kappa * cos(beta_v/2).^(2*l+m-mPrime-2*kappa) .* ...
                 (-sin(beta_v/2)).^(mPrime-m+2*kappa) / ...
-                (factorial(l-mPrime-kappa)*factorial(l+m-kappa)*...
-                factorial(kappa+mPrime-m)*factorial(kappa));
+                (fac(l-mPrime-kappa+1)*fac(l+m-kappa+1)*...
+                fac(kappa+mPrime-m+1)*fac(kappa+1));
+            else
+                term_v = term_v .* (-tan(beta_v/2).^2) .* ((l-mPrime-kappa+1) * ...
+                (l+m-kappa+1) / (kappa+mPrime-m) / kappa);
+            end
             dSum_v = dSum_v + term_v;
         end
-        d_v = sqrt(factorial(l+m)*factorial(l-m)*factorial(l+mPrime) * ...
-            factorial(l-mPrime)) * dSum_v;
+        d_v = sqrt(fac(l+m+1)*fac(l-m+1)*fac(l+mPrime+1) * ...
+            fac(l-mPrime+1)) * dSum_v;
 end
 
 % Now calculate D [Rose, eqn. 4.12]:
