@@ -25,6 +25,9 @@ function n_m = getDirectionsWrapper(n)
 %   n_m = readElectroStaticDirs(n)
 %   n_m = getDirsFromFile(dirsFile_s, tabFlag)
 
+baseDir = fileparts(mfilename('fullpath'));
+dirsDir = fullfile(baseDir, 'dwDirectionSets');
+
 % Find the directions for given n:
 switch n
     case {6, 15, 32, 46, 92}
@@ -52,8 +55,7 @@ switch n
     case 23
         % Read harDirs23set2.txt text file:
         tabFlag = 0;
-        dirsFile_s = ['/Users/andera/Docs/', ...
-            'MATLAB/harDti/harDirs23set2.txt'];
+        dirsFile_s = fullfile(dirsDir, 'harDirs23set2.txt');
         n_m = getDirsFromFile(dirsFile_s, tabFlag);  
     case {1, 2, 3, 4, 5, 7, 8, 9}
         % Take the first n directions from readElectroStaticDirs(10):
@@ -62,13 +64,11 @@ switch n
     case {4002}
         % Read text file created by har4049.nb, for example:
         tabFlag = 0;
-        dirsFile_s = ['/Users/andera/Docs/', ...
-            'Mathematica/harDirs', num2str(n), '.txt'];
+        dirsFile_s = fullfile(dirsDir, ['harDirs', num2str(n), '.txt']);
         n_m = getDirsFromFile(dirsFile_s, tabFlag);        
     otherwise
         % Read text file created by har4049.nb, for example:
         tabFlag = 1;
-        dirsFile_s = ['/Users/andera/Docs/', ...
-            'Mathematica/harDirs', num2str(n), '.txt'];
+        dirsFile_s = fullfile(dirsDir, ['harDirs', num2str(n), '.txt']);
         n_m = getDirsFromFile(dirsFile_s, tabFlag);
 end
