@@ -1,5 +1,5 @@
 function [xOpt_v, plmPrimeMrtrix_m, solutions_sa, xInit_v] = ...
-    splitFod4_mrtrix(plmLabMrtrix_v)
+    splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
 % Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = ...
 %   splitFod4_mrtrix(plmLabMrtrix_v)
 %
@@ -13,6 +13,7 @@ function [xOpt_v, plmPrimeMrtrix_m, solutions_sa, xInit_v] = ...
 %
 %   plmLabMrtrix_v: nTermsMrtrix x 1 array of lab frame (LF) FOD coefficients
 %               (in MRtrix3 format) for given lMax.
+%   fracFitErrorThresh: 1e-6 for simulation, 5e-2 for actual data.
 %
 % Output variables:
 %
@@ -59,32 +60,32 @@ nTermsMrtrix = length(plmLabMrtrix_v);
 plmLab_v(1) = 1/sqrt(4*pi);     % FOD integrates to 1.
 
 % Call splitFod4:
-[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v);
+[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh);
 
 %% Evaluate solution.
 
 % Show FF FODs:
-testRotFlag1 = 1;   % Show subFixels.
+testRotFlag1 = 0;   % Show subFixels.
 [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
     splitFodError2(xOpt_v, plmLab_v, testRotFlag1, 'Optimized Solution');
-figure
-alphaOp = 1;
-az = 45;
-el = 30;
-subplot(1, 2, 1)
-showFad3(uniTrans2standard(plmLab_v, lMax), alphaOp, az, el)
-title('Input LF FOD')
-subplot(1, 2, 2)
-plmLabModelAll_v = uniTrans2standard(plmLabModel_v, lMax);
-showFad3(plmLabModelAll_v, alphaOp, az, el)
-title('Sum over FF FODs')
+% figure
+% alphaOp = 1;
+% az = 45;
+% el = 30;
+% subplot(1, 2, 1)
+% showFad3(uniTrans2standard(plmLab_v, lMax), alphaOp, az, el)
+% title('Input LF FOD')
+% subplot(1, 2, 2)
+% plmLabModelAll_v = uniTrans2standard(plmLabModel_v, lMax);
+% showFad3(plmLabModelAll_v, alphaOp, az, el)
+% title('Sum over FF FODs')
 
 % Report optimized fixel properties and convert output plm to MRtrix3 format:
 nSubFixels = length(xOpt_v)/2;
 thetaOpt_v = zeros(nSubFixels, 1);  % xInit_v + optimized dOrient_v.
 phiOpt_v = zeros(nSubFixels, 1);  % xInit_v + optimized dOrient_v.
 plmPrimeMrtrix_m = zeros(nTermsMrtrix, nSubFixels);
-figure
+% figure
 for fIndex = 1:nSubFixels
     thetaEst = xOpt_v(nSubFixels + fIndex);
     phiEst = xOpt_v(fIndex);
@@ -105,16 +106,16 @@ for fIndex = 1:nSubFixels
     % Save net (rectified) theta, phi:
     thetaOpt_v(fIndex) = thetaEst;   
     phiOpt_v(fIndex) = phiEst; 
-    % Show FF FODs:
-    subplot(1, nSubFixels, fIndex)
+    % % Show FF FODs:
+    % subplot(1, nSubFixels, fIndex)
     plmPrimeCorAll_v = uniTrans2standard(plmPrimeCor_m(:, fIndex), lMax);
-    showFad3(plmPrimeCorAll_v, alphaOp, az, el);
-    title(['SubFixel ', num2str(fIndex)])
+    % showFad3(plmPrimeCorAll_v, alphaOp, az, el);
+    % title(['SubFixel ', num2str(fIndex)])
     % Convert to MRtrix3 format:
     plmPrimeMrtrix_m(:, fIndex) = standard2mrtrix(plmPrimeCorAll_v)';
 end
 % Plot the subFixels on the surface of a sphere:
-vuPointsOnSphere(thetaOpt_v, phiOpt_v);     % Opens new figure itself.
-title('Optimized fixel orientations')
+% vuPointsOnSphere(thetaOpt_v, phiOpt_v);     % Opens new figure itself.
+% title('Optimized fixel orientations')
 
 

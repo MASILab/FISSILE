@@ -112,7 +112,7 @@ switch search_s
         % Create objects:
         disp(['Running multistart with ', num2str(nTrials), ' trials...'])
         %rng default % For reproducibility
-        opts = optimoptions(@fmincon, 'UseParallel', true);
+        opts = optimoptions(@fmincon, 'UseParallel', false);
         probObj = createOptimProblem('fmincon', 'x0', zeros(size(xInit_v)), ...
                'objective', fitErrorMS, 'lb', lb_v, 'ub', ub_v, 'options', opts);
         msObj = MultiStart('Display', 'iter');

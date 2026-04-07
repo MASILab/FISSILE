@@ -78,9 +78,15 @@ for fIndex = 1:nFibers
     while (sign(D2P_v(index))*sign(D2P_v(index-1)) == 1)
         index = index - 1;
         % For debugging:
+        if (index == 2)
+            plmPrimeOut_m = plmPrime_m;
+            p00Correction_v = zeros(size(plmPrime_m));
+            p00Correction2_v = p00Correction_v - mean(p00Correction_v);
+            return
+        end
         if (index == 1)
-            disp(['Error in p00Correction.m: plmPrime_m = ', ...
-                num2str(plmPrime_m)])
+            disp("Error in p00Correction.m: plmPrime_m = ")
+            disp(num2str(plmPrime_m))
         end
     end
     indexL2 = index - 1;    % Second inflection point.

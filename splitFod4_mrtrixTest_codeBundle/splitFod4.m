@@ -1,5 +1,5 @@
-function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v)
-% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v)
+function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
+% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
 %
 % splitFod4 estimates the FF axes using Xin Hong's watershed algorithm.
 % These estimates are used to initialize the multistart search in
@@ -11,6 +11,8 @@ function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v)
 %
 %   plmLab_v:   nTerms x 1 array of lab frame (LF) FOD coefficients (in
 %               mNNpEvenReal1 format) for given lMax.
+%   fracFitErrorThresh: 1e-6 for simulation, 5e-2 for actual data.
+%
 %
 % Output variables:
 %
@@ -56,7 +58,7 @@ plmLabAll_v = uniTrans2standard(plmLab_v, lMax);
 realFlag = 0;
 volThreshold = 0.15;    % Large enough to reject Gibbs ringing.
 angThreshold = 30*(pi/180); 
-plotFlag = 1;   % 1 to show plots for debugging, 0 to skip.
+plotFlag = 0;   % 1 to show plots for debugging, 0 to skip.
 flipFlag = 1;
 % Call Xin Hong's watershed algorithm (note capitalization of 'FOD'):
 [pCoeff_m, fodMax_m, ACC, oriFodMax_m, nOriFib] = splitFOD3(plmLabAll_v, ...
@@ -83,7 +85,6 @@ xInit_v = [phiInit_v; thetaInit_v];
 
 % Top of loop:
 %Qthresh = 1e-6;
-fracFitErrorThresh = 5e-6;  % 1e-6 for simulation, 5e-2 for actual data.
 f_v = fodMax_m(:, 1);   % Initialize estimated volume fractions.
 testRotFlag0 = 0;       % Don't test rotations.
 splitFlag = 1;

@@ -103,7 +103,7 @@ for fIndex = 1:Nf
     for  l = 0:2:lMax
         % Input to nnMpEvenRotationMatrix is a row vector for one FF. Output
         % is (2l+1)x(2l+1) matrix:
-        Xlf_m = nnMpEvenRotationMatrix_v2(-fliplr(euler_v), l);
+        Xlf_m = nnMpEvenRotationMatrix(-fliplr(euler_v), l);
         % Xf_m is block-diagonal (l terms transform to the same l):
         Xf_m(l_v == l, l_v == l) = Xlf_m;
     end
