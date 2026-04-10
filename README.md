@@ -44,7 +44,7 @@ ENTRYPOINT ["/app/fissile_compiled/run_fissile.sh", "/opt/matlabruntime/R2023a/"
 Build with:
 
 ```
-docker build -t fissile:v1.0.0
+docker build -t fissile:v1.0.0 .
 ```
 
 Run with:

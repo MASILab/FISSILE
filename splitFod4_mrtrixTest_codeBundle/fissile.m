@@ -19,7 +19,19 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
     % addpath(genpath('./dirichlet-matlab'));
 
 
+    if ischar(fracFitErrorThresh) || isstring(fracFitErrorThresh)
+        fracFitErrorThresh = str2double(fracFitErrorThresh);
+    end
+
+    if ischar(n_jobs) || isstring(n_jobs)
+        n_jobs = str2num(n_jobs);
+    end
+
     S = load(input_file);
+    fprintf('input_file: %s\n', input_file);
+    fprintf('output_file: %s\n', output_file);
+    fprintf('fracFitErrorThresh: %.4f\n', fracFitErrorThresh);
+    fprintf('n_jobs: %d\n', n_jobs);
     
     if ~isfield(S, 'signal')
         error('The input .mat file does not contain a variable named "signal".')
@@ -41,6 +53,7 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
     est_v_c = cell(n_iter, 1);
 
     n_jobs = str2double(n_jobs);
+    n_jobs = min(n_jobs, n_iter);
     parpool("Processes", n_jobs);
     parfor i = 1:n_iter
         fprintf('Progress: %3d%% (%d/%d)\n', round(100*(i-1)/size(signal,1)), i, size(signal,1));

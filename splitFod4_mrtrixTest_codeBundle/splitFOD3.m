@@ -99,7 +99,8 @@ modGridP_m = -gridP_m;
 % make small lobes zero
 maxP = min(modGridP_m(:));
 fodThres = min(modGridP_m(:)) * volThreshold + max(modGridP_m(:)) * (1 - volThreshold);
-modGridP_m(modGridP_m > fodThres) = 0;
+%modGridP_m(modGridP_m > fodThres) = 0;
+modGridP_m(modGridP_m > maxP * volThreshold) = 0;
 
 % half of theta range, double phi range
 work_m = modGridP_m(1:nHalfRows,:);

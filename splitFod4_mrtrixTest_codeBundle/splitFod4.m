@@ -121,6 +121,8 @@ while (splitFlag == 1)
 
     % Determine whether fit is acceptable. If not, add another subFixel at 
     % the orientation of the fiber with the greatest FOD axialAsymmetry:
+    fprintf('fracFitError: %.4f\n', fracFitError);
+    fprintf('fracFitErrorThresh: %.4f\n', fracFitErrorThresh);
     if (fracFitError > fracFitErrorThresh)
         % Split FOD with largest axialAsymmetry:
         QmaxIndex = find(Q_v == Qmax, 1, 'first');
