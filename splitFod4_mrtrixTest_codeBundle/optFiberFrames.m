@@ -64,6 +64,8 @@ fitError = @(dOrient_v) splitFodErrorWrapper(xInit_v + dOrient_v, plmLab_v, ...
     testRotFlag0, '');  % For fminsearch (simplex), simulanneal, GlobalSearch.
 fitErrorMS = @(x_v) splitFodErrorWrapper(x_v, plmLab_v, ...
     testRotFlag0, '');  % For multistart.
+fitErrorSO = @(x_v) splitFodErrorWrapper(x_v(:), plmLab_v, ...
+    testRotFlag0, '');  % For multistart.
 % Find splitFodError at initial search point:
 fracFitErrorInit = splitFodErrorWrapper(xInit_v, plmLab_v, testRotFlag0, '');
 disp(['   fractional fit error at initial search point = ', ...
@@ -71,7 +73,7 @@ disp(['   fractional fit error at initial search point = ', ...
 
 % Launch search for the best increment to add to xInit_v (for GlobalSearch)
 % or best angles (for multistart):
-search_s = 'multistart'; % fminsearch, simulanneal, multisart or GlobalSearch.
+search_s = 'multistart_irls'; % fminsearch, simulanneal, multisart or GlobalSearch.
 tStart = tic;
 switch search_s
     case 'fminsearch'       % Simplex search.
@@ -117,7 +119,85 @@ switch search_s
                'objective', fitErrorMS, 'lb', lb_v, 'ub', ub_v, 'options', opts);
         msObj = MultiStart('Display', 'iter');
         [xOpt_v, fval, exitflag, output, solutions_sa] = run(msObj, probObj, tpoints);
-        xOpt_v = rectifyAngles(xOpt_v); % Insure that angles are rectified.
+        xOpt_v = rectifyAngles(xOpt_v); % Insure that angles are rectified
+    case 'multistart_irls'
+            % Get number of trial points:
+            switch nSubFixels
+                case 1
+                    nTrials = 1;
+                case 2
+                    nTrials = 10;
+                otherwise
+                    nTrials = 60;
+            end
+            alphaMax =  30 * (pi/180);   % 30 degrees (matches simFixelDecomp8.m).
+            xStart_m = getMyCustomStartPoints(xInit_v, alphaMax, nTrials);
+            tpoints = CustomStartPointSet(xStart_m);    % MATLAB fn.
+            % Redefine lb and ub for multistart:
+            lb_v = [-pi*ones(nSubFixels, 1); -(pi/2)*ones(nSubFixels, 1)];
+            ub_v = [pi*ones(nSubFixels, 1); (pi/2)*ones(nSubFixels, 1)];
+            % Create objects:
+            disp(['Running multistart with ', num2str(nTrials), ' trials...'])
+            %rng default % For reproducibility
+            opts = optimoptions(@fmincon, 'UseParallel', false);
+            msObj = MultiStart('Display', 'iter');
+
+            maxIRLSIter = 5;
+            tolW = 1e-3;
+            W = diag(ones(1002,1));
+            xCurr_v = xInit_v;
+            
+            for IRLSIter = 1:maxIRLSIter
+                fitErrorIRLS = @(x_v) splitFodErrorWrapperIRLS(x_v, plmLab_v, ...
+                    testRotFlag0, '', W);
+                probObj = createOptimProblem('fmincon', 'x0', xCurr_v, ...
+                   'objective', fitErrorIRLS, 'lb', lb_v, 'ub', ub_v, 'options', opts);
+
+                [xCurr_v, fval, exitflag, output, solutions_sa] = run(msObj, probObj, tpoints);
+                [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = splitFodError2_IRLS(xCurr_v, plmLab_v, testRotFlag0, '', W);
+
+                % Update W based on fit error
+                diagonal_W = ones(size(W, 1)) / max(tolW, fitCost);
+                W = diag(diagonal_W);
+            end
+            xOpt_v = rectifyAngles(xOpt_v); % Insure that angles are rectified.
+    case 'surrogateopt'
+        % Get number of trial points:
+        switch nSubFixels
+            case 1
+                nTrials = 1;
+            case 2
+                nTrials = 10;
+            otherwise
+                nTrials = 60;
+        end
+    
+        alphaMax = 30 * (pi/180);   % 30 degrees (matches simFixelDecomp8.m).
+        xStart_m = getMyCustomStartPoints(xInit_v, alphaMax, nTrials);
+    
+        % Finite bounds required by surrogateopt:
+        lb_v = [-pi*ones(nSubFixels, 1); -(pi/2)*ones(nSubFixels, 1)];
+        ub_v = [ pi*ones(nSubFixels, 1);  (pi/2)*ones(nSubFixels, 1)];
+    
+        % Make sure the initial points are inside the bounds.
+        xStart_m = min(max(xStart_m, lb_v.'), ub_v.');
+    
+        % Make sure each row is one point, with the correct number of columns.
+        if size(xStart_m, 2) ~= numel(lb_v) && size(xStart_m, 1) == numel(lb_v)
+            xStart_m = xStart_m.';
+        end        
+        xStart_m = min(max(xStart_m, lb_v.'), ub_v.');
+        
+        opts = optimoptions('surrogateopt', ...
+            'Display', 'iter', ...
+            'InitialPoints', xStart_m, ...
+            'MaxFunctionEvaluations', 5000, ...
+            'UseParallel', false);
+        
+        solutions_sa = [];
+        [xOpt_v, fval, exitflag, output] = surrogateopt(fitErrorSO, lb_v, ub_v, opts);
+        xOpt_v = xOpt_v(:);
+        xOpt_v = rectifyAngles(xOpt_v);
     case 'GlobalSearch'
         constrain_s = 'y';  % Select constrained or unconstrained search.
         if strcmp(constrain_s, 'y')
@@ -166,6 +246,9 @@ disp(['   Fractional error at optimized solution = ', ...
 if strcmp(search_s, 'multistart')
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
         splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ');
+elseif strcmp(search_s, 'surrogateopt')
+    [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
+        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ');
 else
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
         splitFodError2(xInit_v + xOpt_v, plmLab_v, testRotFlag0, ' ');
@@ -188,5 +271,16 @@ function fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, fi
 % Call splitFodError2:
 [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
     splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s);
+end
+
+function fracFitError = splitFodErrorWrapperIRLS(ffAxes_v, plmLab_v, testRotFlag, figName_s, W)
+% Usage: fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, figName_s)
+%
+% splitFodErrorWrapper calls the function splitFodError2 and returns only
+% the first output variable (for fmincon).
+%
+% Call splitFodError2:
+[fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
+    splitFodError2_IRLS(ffAxes_v, plmLab_v, testRotFlag, figName_s, W);
 end
 
