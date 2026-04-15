@@ -11,6 +11,8 @@ function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fr
 %
 %   plmLab_v:   nTerms x 1 array of lab frame (LF) FOD coefficients (in
 %               mNNpEvenReal1 format) for given lMax.
+%   fracFitErrorThresh: 1e-6 for simulation, 5e-2 for actual data.
+%
 %
 % Output variables:
 %
@@ -56,7 +58,7 @@ plmLabAll_v = uniTrans2standard(plmLab_v, lMax);
 realFlag = 0;
 volThreshold = 0.15;    % Large enough to reject Gibbs ringing.
 angThreshold = 30*(pi/180); 
-plotFlag = 1;   % 1 to show plots for debugging, 0 to skip.
+plotFlag = 0;   % 1 to show plots for debugging, 0 to skip.
 flipFlag = 1;
 % Call Xin Hong's watershed algorithm (note capitalization of 'FOD'):
 [pCoeff_m, fodMax_m, ACC, oriFodMax_m, nOriFib] = splitFOD3(plmLabAll_v, ...

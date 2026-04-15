@@ -49,7 +49,7 @@ function [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
 % Get useful constants:
 nTerms = length(plmLab_v);  % mNNpEvenReal1 format. 
 Nf = length(ffAxes_v)/2;      % Number of fiber axes.
-eta2 = 1;    % Regularization (penalty) term.
+eta2 = 5;    % Regularization (penalty) term.
 
 % Get derived paramters. First, find lMax using 
 %   nTerms = lMax.*(lMax+3)/2 + l0Flag
@@ -103,7 +103,7 @@ for fIndex = 1:Nf
     for  l = 0:2:lMax
         % Input to nnMpEvenRotationMatrix is a row vector for one FF. Output
         % is (2l+1)x(2l+1) matrix:
-        Xlf_m = nnMpEvenRotationMatrix_v2(-fliplr(euler_v), l);
+        Xlf_m = nnMpEvenRotationMatrix(-fliplr(euler_v), l);
         % Xf_m is block-diagonal (l terms transform to the same l):
         Xf_m(l_v == l, l_v == l) = Xlf_m;
     end
@@ -190,10 +190,16 @@ yl0_90_v = getYl0perp(lMax);
 % Yl0_45_v = getYl0(lMax, pi/4);     % Yl0 at theta = 45 degrees for l=0:2:lMax.
 % yl0_45_v = zeros(nTerms, 1);
 % yl0_45_v(m_v == 0) = Yl0_45_v;     % Column vector in mNNpEvenReal1 format.
-% Get Yl0 at theta = 60 degrees (for l=0:2:lMax):
-Yl0_60_v = getYl0(lMax, pi/3);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
-yl0_60_v = zeros(nTerms, 1);
-yl0_60_v(m_v == 0) = Yl0_60_v;     % Column vector in mNNpEvenReal1 format.
+% % Get Yl0 at theta = 60 degrees (for l=0:2:lMax):
+% Yl0_60_v = getYl0(lMax, pi/3);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
+% yl0_60_v = zeros(nTerms, 1);
+% yl0_60_v(m_v == 0) = Yl0_60_v;     % Column vector in mNNpEvenReal1 format.
+Yl0_15_v = getYl0(lMax, 15*pi/180);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
+yl0_15_v = zeros(nTerms, 1);
+yl0_15_v(m_v == 0) = Yl0_15_v;     % Column vector in mNNpEvenReal1 format.
+Yl0_80_v = getYl0(lMax, 80*pi/180);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
+yl0_80_v = zeros(nTerms, 1);
+yl0_80_v(m_v == 0) = Yl0_80_v;     % Column vector in mNNpEvenReal1 format.
 shapeCost_v = zeros(1, Nf);
 % Loop over FFs:
 for fIndex = 1:Nf
@@ -202,10 +208,14 @@ for fIndex = 1:Nf
     %fod30 = plmFF_v.' * yl0_30_v; % P(pi/6,0). % Note: ringing makes this
     %problematic.
     %fod45 = plmFF_v.' * yl0_45_v; % P(pi/4,0).
-    fod60 = plmFF_v.' * yl0_60_v; % P(pi/3,0).
+    % fod60 = plmFF_v.' * yl0_60_v; % P(pi/3,0).
     fod90 = plmFF_v.' * yl0_90_v; % P(pi/2,0).
+    fod15 = plmFF_v.' * yl0_15_v;
+    fod80 = plmFF_v.' * yl0_80_v;
     % Each difference should be < 0; use a RELU:
-    shapeCost_v(fIndex) = max([fod90 - fod60, fod60 - fod0, 0]); 
+    % shapeCost_v(fIndex) = max([fod90 - fod60, fod60 - fod0, 0]); 
+    % shapeCost_v(fIndex) = sum(max([fod80 - fod15, fod15 - fod0, fod80 - fod0], 0).^2); 
+    shapeCost_v(fIndex) = sum(max([fod90 - fod80, fod80 - fod15, fod15 - fod0, fod90 - fod0, fod80 - fod0], 0).^2); 
 end
 shapeCost = max(shapeCost_v);    % Take max over fibers.       
 
@@ -243,15 +253,21 @@ penalty_v = conAll_m * plmPrime_v;
 penaltyCost = penalty_v'*penalty_v;
 % Get sign(p00) cost; use RELU:
 p00SignCost = max(-plmPrime_m(1,:).*(ones(1, Nf) - sign(plmPrime_m(1,:)))/2);
+
+% Penalty for dominant p20:
+pl0Prime_m = plmPrime_m(m_v == 0,:);
+mean_pl0 = mean(pl0Prime_m(3:end,:)) + 1e-8;
+ratio = pl0Prime_m(2,:) ./ mean_pl0;
+penalty_p20 = max([0, ratio - 3])^2;
+
 % Get final SSE value. Penalty for |m| > 0 terms is part of plmPrime_v 
 % optimization:
-sse = fitCost + shapeCost + p00SignCost; 
+sse = fitCost + 1 * shapeCost + 2 * penalty_p20 + p00SignCost;
 % For debugging:
 if (testRotFlag == 1)
     disp(['fitCost = ', num2str(fitCost/sse), '*SSE, shapeCost = ', ...
-        num2str(shapeCost/sse), '*SSE, p00SignCost = ', ...
-        num2str(p00SignCost/sse), '*SSE (penaltyCost = ', ...
-        num2str(penaltyCost/sse), '*SSE)'])
+        num2str(1*shapeCost/sse), '*SSE, penaltyCost = ', ...
+        num2str(2*penalty_p20/sse), '*SSE'])
 end
 
 % Return fractional error (includes fit and shape cost):

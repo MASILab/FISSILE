@@ -79,8 +79,13 @@ for fIndex = 1:nFibers
         index = index - 1;
         % For debugging:
         if (index == 1)
-            disp(['Error in p00Correction.m: plmPrime_m = ', ...
-                num2str(plmPrime_m)])
+            disp('Error in p00Correction.m: plmPrime_m = ');
+            disp(num2str(plmPrime_m));
+
+            % Break if we reach the beginning of the array:
+            index = 2;
+            break;
+           
         end
     end
     indexL2 = index - 1;    % Second inflection point.

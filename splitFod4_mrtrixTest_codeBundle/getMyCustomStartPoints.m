@@ -33,7 +33,7 @@ nFixels = length(x0_v)/2;
 
 % Generate start points for each fixel:
 xStart_m = zeros(nPoints, 2*nFixels);
-figure
+% figure
 for fIndex = 1:nFixels
     % Add random angle (in a cone) to get start point for search:
     theta0 = x0_v(nFixels + fIndex);
@@ -46,6 +46,6 @@ for fIndex = 1:nFixels
     xStart_m(:, fIndex) = phiStart_v;               % phi values.
     % Show start points for each subFixel:
     title_s = ['Fixel ', num2str(fIndex), ' start points'];
-    subplot(1, nFixels, fIndex)
-    vuPointsOnSphere3(thetaStart_v, phiStart_v, 'r', title_s);
+    % subplot(1, nFixels, fIndex)
+    % vuPointsOnSphere3(thetaStart_v, phiStart_v, 'r', title_s);
 end
