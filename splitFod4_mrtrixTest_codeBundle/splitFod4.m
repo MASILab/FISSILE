@@ -1,5 +1,5 @@
-function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v)
-% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v)
+function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
+% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
 %
 % splitFod4 estimates the FF axes using Xin Hong's watershed algorithm.
 % These estimates are used to initialize the multistart search in
@@ -83,7 +83,7 @@ xInit_v = [phiInit_v; thetaInit_v];
 
 % Top of loop:
 %Qthresh = 1e-6;
-fracFitErrorThresh = 5e-6;  % 1e-6 for simulation, 5e-2 for actual data.
+%fracFitErrorThresh = 5e-6;  % 1e-6 for simulation, 5e-2 for actual data.
 f_v = fodMax_m(:, 1);   % Initialize estimated volume fractions.
 testRotFlag0 = 0;       % Don't test rotations.
 splitFlag = 1;
@@ -120,7 +120,10 @@ while (splitFlag == 1)
 
     % Determine whether fit is acceptable. If not, add another subFixel at 
     % the orientation of the fiber with the greatest FOD axialAsymmetry:
-    if (fracFitError > fracFitErrorThresh)
+    fprintf('fracFitError: %.4f\n', fracFitError);
+    fprintf('fracFitErrorThresh: %.4f\n', fracFitErrorThresh);
+    maxFibers = 10;
+    if (fracFitError > fracFitErrorThresh && nSubFixels < maxFibers)
         % Split FOD with largest axialAsymmetry:
         QmaxIndex = find(Q_v == Qmax, 1, 'first');
         phiQmax = xOpt_v(QmaxIndex);

@@ -1,7 +1,7 @@
 function [xOpt_v, plmPrimeMrtrix_m, solutions_sa, xInit_v] = ...
-    splitFod4_mrtrix(plmLabMrtrix_v)
+    splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
 % Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = ...
-%   splitFod4_mrtrix(plmLabMrtrix_v)
+%   splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
 %
 % splitFod4_mrtrix estimates the fiber frame (FF) axes using Xin Hong's 
 % watershed algorithm. These estimates are then used to initialize the 
@@ -59,7 +59,7 @@ nTermsMrtrix = length(plmLabMrtrix_v);
 plmLab_v(1) = 1/sqrt(4*pi);     % FOD integrates to 1.
 
 % Call splitFod4:
-[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v);
+[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh);
 
 %% Evaluate solution.
 
