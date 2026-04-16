@@ -54,7 +54,6 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
     est_phi_c = cell(n_iter, 1);
     est_v_c = cell(n_iter, 1);
 
-    n_jobs = str2double(n_jobs);
     n_jobs = min(n_jobs, n_iter);
     fprintf('n_voxels: %d\n', n_iter);
     fprintf('Using %d parallel processes\n', n_jobs);
