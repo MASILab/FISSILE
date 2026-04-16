@@ -56,7 +56,8 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
 
     n_jobs = str2double(n_jobs);
     n_jobs = min(n_jobs, n_iter);
-    sprintf('Using %d parallel processes\n', n_jobs);
+    fprintf('n_voxels: %d\n', n_iter);
+    fprintf('Using %d parallel processes\n', n_jobs);
     parpool("Processes", n_jobs);
     parfor i = 1:n_iter
         fprintf('Progress: %3d%% (%d/%d)\n', round(100*(i-1)/size(signal,1)), i, size(signal,1));
