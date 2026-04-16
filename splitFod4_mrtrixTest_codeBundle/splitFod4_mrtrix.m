@@ -1,4 +1,4 @@
-function [xOpt_v, plmPrimeMrtrix_m, solutions_sa, xInit_v] = ...
+function [xOpt_v, plmPrimeMrtrix_m, plmPrimeMrtrix_lf_m, solutions_sa, xInit_v] = ...
     splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
 % Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = ...
 %   splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
@@ -85,6 +85,7 @@ nSubFixels = length(xOpt_v)/2;
 thetaOpt_v = zeros(nSubFixels, 1);  % xInit_v + optimized dOrient_v.
 phiOpt_v = zeros(nSubFixels, 1);  % xInit_v + optimized dOrient_v.
 plmPrimeMrtrix_m = zeros(nTermsMrtrix, nSubFixels);
+plmPrimeMrtrix_lf_m = zeros(nTermsMrtrix, nSubFixels);
 % figure
 for fIndex = 1:nSubFixels
     thetaEst = xOpt_v(nSubFixels + fIndex);
@@ -113,7 +114,39 @@ for fIndex = 1:nSubFixels
     % title(['SubFixel ', num2str(fIndex)])
     % Convert to MRtrix3 format:
     plmPrimeMrtrix_m(:, fIndex) = standard2mrtrix(plmPrimeCorAll_v)';
+
+    % Rotate into lab frame as well
+    nTerms = length(plmLab_v);
+    Xf_m = zeros(nTerms, nTerms); 
+    euler_v = [-phiEst, -thetaEst, 0];
+    lMax = getLmax_mNNpEvenReal1(length(plmLab_v));
+    [l_v, m_v, isReal_v] = index2lm_mNNpEvenReal(1:nTerms);
+    for  l = 0:2:lMax
+        % Input to nnMpEvenRotationMatrix is a row vector for one FF. Output
+        % is (2l+1)x(2l+1) matrix:
+        Xlf_m = nnMpEvenRotationMatrix(-fliplr(euler_v), l);
+        % Xf_m is block-diagonal (l terms transform to the same l):
+        Xf_m(l_v == l, l_v == l) = Xlf_m;
+    end
+    plmPrime_mNNpEvenReal1_lf_m = Xf_m * uniTrans2format(plmPrimeCorAll_v, ['mNNpEvenReal', '1']);
+    plmPrimeStandard_lf_m = uniTrans2standard(plmPrime_mNNpEvenReal1_lf_m, lMax);
+    plmPrimeMrtrix_lf_m(:, fIndex) = standard2mrtrix(plmPrimeStandard_lf_m);
 end
+% 
+% figure
+% for fIndex = 1:nSubFixels
+%     subplot(1, nSubFixels+1, fIndex)
+%     showFad3(plmPrimeStandard_lf_m(:, fIndex), 1, 50, 25);
+%     xlim([-0.3, 0.3])
+%     ylim([-0.3, 0.3])
+%     zlim([-0.3, 0.3])
+% end
+% subplot(1, nSubFixels+1,  nSubFixels+1)
+% showFad3(sum(plmPrimeStandard_lf_m, 2), 1, 50, 25);
+% xlim([-0.3, 0.3])
+% ylim([-0.3, 0.3])
+% zlim([-0.3, 0.3])
+
 % Plot the subFixels on the surface of a sphere:
 % vuPointsOnSphere(thetaOpt_v, phiOpt_v);     % Opens new figure itself.
 % title('Optimized fixel orientations')

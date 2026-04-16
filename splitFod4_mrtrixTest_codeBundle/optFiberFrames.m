@@ -73,7 +73,7 @@ disp(['   fractional fit error at initial search point = ', ...
 
 % Launch search for the best increment to add to xInit_v (for GlobalSearch)
 % or best angles (for multistart):
-search_s = 'multistart_irls'; % fminsearch, simulanneal, multisart or GlobalSearch.
+search_s = 'multistart'; % fminsearch, simulanneal, multisart or GlobalSearch.
 tStart = tic;
 switch search_s
     case 'fminsearch'       % Simplex search.
@@ -162,6 +162,7 @@ switch search_s
                 end
                 W = Wnew;
             end
+            xOpt_v = xCurr_v;
     case 'surrogateopt'
         % Get number of trial points:
         switch nSubFixels

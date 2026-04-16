@@ -41,6 +41,7 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
     data = repmat(struct( ...
         'total_fod', [], ...
         'separate_fod', [], ...
+        'rotate_separate_fod', [], ...
         'est_theta', [], ...
         'est_phi', [], ...
         'est_v', []), n_iter, 1);
@@ -48,21 +49,24 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
     % Run FISSILE on signal
     total_fod_c = cell(n_iter, 1);
     separate_fod_c = cell(n_iter, 1);
+    rotate_separate_fod_c = cell(n_iter, 1);
     est_theta_c = cell(n_iter, 1);
     est_phi_c = cell(n_iter, 1);
     est_v_c = cell(n_iter, 1);
 
     n_jobs = str2double(n_jobs);
     n_jobs = min(n_jobs, n_iter);
+    sprintf('Using %d parallel processes\n', n_jobs);
     parpool("Processes", n_jobs);
     parfor i = 1:n_iter
         fprintf('Progress: %3d%% (%d/%d)\n', round(100*(i-1)/size(signal,1)), i, size(signal,1));
     
         % Split into fibers
-        [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4_mrtrix(signal(i,:), fracFitErrorThresh);
+        [xOpt_v, plmPrimeCor_m, plmPrimeCor_separate_m, solutions_sa, xInit_v] = splitFod4_mrtrix(signal(i,:), fracFitErrorThresh);
     
         total_fod_c{i} = signal(i,:);
         separate_fod_c{i} = plmPrimeCor_m';
+        rotate_separate_fod_c{i} = plmPrimeCor_separate_m';
         n_subfixel = size(plmPrimeCor_m, 2);
         est_theta_c{i} = xOpt_v(n_subfixel+1:end)';
         est_phi_c{i} = xOpt_v(1:n_subfixel)';
@@ -76,6 +80,7 @@ function fissile(input_file, output_file, fracFitErrorThresh, n_jobs)
         data(i).est_theta = est_theta_c{i};
         data(i).est_phi = est_phi_c{i};
         data(i).est_v = est_v_c{i};
+        data(i).rotate_separate_fod = rotate_separate_fod_c{i};
     end
 
     % Replace "data" with "results" and save

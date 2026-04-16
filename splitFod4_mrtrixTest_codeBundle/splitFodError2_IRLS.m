@@ -248,7 +248,8 @@ switch fitCost_s
         % (H.60)]:
         valid = angMask_v > 0;
         residuals = fodLabModel_v - fodLab_v;
-        fitCost = 4*pi/nDirs * sum(W(valid) .* residuals(valid).^2);
+        w = diag(W);
+        fitCost = 4*pi/nDirs * sum(w(valid) .* residuals(valid).^2);
 
         eps = 1e-3;
         Wnew = zeros(size(residuals));
@@ -272,7 +273,7 @@ penalty_p20 = max([0, ratio - 3])^2;
 sse = sum(fitCost) + 1 * shapeCost + 2 * penalty_p20 + p00SignCost;
 % For debugging:
 if (testRotFlag == 1)
-    disp(['fitCost = ', num2str(sum(fitCost)/sse), '*SSE, shapeCost = ', ...
+    disp(['fitCost = ', num2str(fitCost/sse), '*SSE, shapeCost = ', ...
         num2str(1*shapeCost/sse), '*SSE, penaltyCost = ', ...
         num2str(2*penalty_p20/sse), '*SSE'])
 end
