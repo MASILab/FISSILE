@@ -1,5 +1,5 @@
-function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
-% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh)
+function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh, eta2, max_fibers)
+% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh, eta2, max_fibers)
 %
 % splitFod4 estimates the FF axes using Xin Hong's watershed algorithm.
 % These estimates are used to initialize the multistart search in
@@ -12,7 +12,8 @@ function [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fr
 %   plmLab_v:   nTerms x 1 array of lab frame (LF) FOD coefficients (in
 %               mNNpEvenReal1 format) for given lMax.
 %   fracFitErrorThresh: 1e-6 for simulation, 5e-2 for actual data.
-%
+%   eta2: Axial symmetry constraint.
+%   max_fibers: Max number of fibers.
 %
 % Output variables:
 %
@@ -104,10 +105,10 @@ while (splitFlag == 1)
     end
 
     % Use multistart to search for more accurate estimates of FF orientation:
-    [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v);
+    [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v, eta2);
     % Get value of cost function:
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, '');
+        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, '', eta2);
     disp(['For optimized solution, fracFitError = ', num2str(fracFitError)])
 
     % Check for asymmetric FF FODs:
@@ -124,8 +125,7 @@ while (splitFlag == 1)
     % the orientation of the fiber with the greatest FOD axialAsymmetry:
     fprintf('fracFitError: %.4f\n', fracFitError);
     fprintf('fracFitErrorThresh: %.4f\n', fracFitErrorThresh);
-    maxFibers = 10;
-    if (fracFitError > fracFitErrorThresh && nSubFixels < maxFibers)
+    if (fracFitError > fracFitErrorThresh && nSubFixels < max_fibers)
         % Split FOD with largest axialAsymmetry:
         QmaxIndex = find(Q_v == Qmax, 1, 'first');
         phiQmax = xOpt_v(QmaxIndex);

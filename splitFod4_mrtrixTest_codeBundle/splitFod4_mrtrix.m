@@ -1,7 +1,7 @@
-function [xOpt_v, plmPrimeMrtrix_m, plmPrimeMrtrix_lf_m, solutions_sa, xInit_v] = ...
-    splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
+function [xOpt_v, plmPrimeMrtrix_m, solutions_sa, xInit_v] = ...
+    splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh, eta2, max_fibers)
 % Usage: [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = ...
-%   splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh)
+%   splitFod4_mrtrix(plmLabMrtrix_v, fracFitErrorThresh, eta2, max_fibers)
 %
 % splitFod4_mrtrix estimates the fiber frame (FF) axes using Xin Hong's 
 % watershed algorithm. These estimates are then used to initialize the 
@@ -14,6 +14,8 @@ function [xOpt_v, plmPrimeMrtrix_m, plmPrimeMrtrix_lf_m, solutions_sa, xInit_v] 
 %   plmLabMrtrix_v: nTermsMrtrix x 1 array of lab frame (LF) FOD coefficients
 %               (in MRtrix3 format) for given lMax.
 %   fracFitErrorThresh: 1e-6 for simulation, 5e-2 for actual data.
+%   eta2: Axial symmetry constraint. 5 by default.
+%   max_fibers: maximum number of fibers to fit. 10 by default.
 %
 % Output variables:
 %
@@ -48,6 +50,13 @@ function [xOpt_v, plmPrimeMrtrix_m, plmPrimeMrtrix_lf_m, solutions_sa, xInit_v] 
 %   lMax = getLmax_mNNpEvenReal1(length(plmLab_v))
 %   vuPointsOnSphere(thetaOpt_v, phiOpt_v)
 
+if nargin < 3
+    eta2 = 5;
+end
+if nargin < 4
+    max_fibers = 10;
+end
+
 % Convert coefficients to mNNpEvenReal1 format:
 plmLabAll_v = mrtrix2standard(plmLabMrtrix_v');    % Complex row vector output.
 plmLab_v = uniTrans2format(plmLabAll_v.', 'mNNpEvenReal1');
@@ -57,17 +66,17 @@ lMax = sqrt(length(plmLabAll_v)) - 1;
 nTermsMrtrix = length(plmLabMrtrix_v);
 
 % Enforce FOD normalization:
-plmLab_v(1) = 1/sqrt(4*pi);     % FOD integrates to 1.
+plmLab_v = plmLab_v / plmLab_v(1) * 1 / sqrt(4*pi); % FOD integrates to 1.
 
 % Call splitFod4:
-[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh);
+[xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4(plmLab_v, fracFitErrorThresh, eta2, max_fibers);
 
 %% Evaluate solution.
 
 % Show FF FODs:
 testRotFlag1 = 0;   % Show subFixels.
 [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-    splitFodError2(xOpt_v, plmLab_v, testRotFlag1, 'Optimized Solution');
+    splitFodError2(xOpt_v, plmLab_v, testRotFlag1, 'Optimized Solution', eta2);
 % figure
 % alphaOp = 1;
 % az = 45;
@@ -114,23 +123,6 @@ for fIndex = 1:nSubFixels
     % title(['SubFixel ', num2str(fIndex)])
     % Convert to MRtrix3 format:
     plmPrimeMrtrix_m(:, fIndex) = standard2mrtrix(plmPrimeCorAll_v)';
-
-    % Rotate into lab frame as well
-    nTerms = length(plmLab_v);
-    Xf_m = zeros(nTerms, nTerms); 
-    euler_v = [-phiEst, -thetaEst, 0];
-    lMax = getLmax_mNNpEvenReal1(length(plmLab_v));
-    [l_v, m_v, isReal_v] = index2lm_mNNpEvenReal(1:nTerms);
-    for  l = 0:2:lMax
-        % Input to nnMpEvenRotationMatrix is a row vector for one FF. Output
-        % is (2l+1)x(2l+1) matrix:
-        Xlf_m = nnMpEvenRotationMatrix(-fliplr(euler_v), l);
-        % Xf_m is block-diagonal (l terms transform to the same l):
-        Xf_m(l_v == l, l_v == l) = Xlf_m;
-    end
-    plmPrime_mNNpEvenReal1_lf_m = Xf_m * uniTrans2format(plmPrimeCorAll_v, ['mNNpEvenReal', '1']);
-    plmPrimeStandard_lf_m = uniTrans2standard(plmPrime_mNNpEvenReal1_lf_m, lMax);
-    plmPrimeMrtrix_lf_m(:, fIndex) = standard2mrtrix(plmPrimeStandard_lf_m);
 end
 % 
 % figure

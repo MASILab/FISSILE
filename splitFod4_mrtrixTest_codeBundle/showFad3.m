@@ -75,7 +75,7 @@ blue_m = abs(z_m) ./ r_m;
 color_3d = cat(3, red_m, green_m, blue_m);
 
 % Plot it:
-surf_h = surf(x_m, y_m, z_m, color_3d);
+surf_h = surf(x_m, y_m, z_m, color_3d, 'EdgeColor', 'none');
 set(surf_h, 'FaceLighting', 'phong', 'FaceColor', 'interp', ...
     'AmbientStrength', 0.5, 'FaceAlpha', alpha)
 light_h = light('Position', [1, -1, 1], 'Style', 'infinite');

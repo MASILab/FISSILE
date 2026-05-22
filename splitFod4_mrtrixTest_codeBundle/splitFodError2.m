@@ -1,7 +1,7 @@
 function [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s)
+    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s, eta2)
 % Usage: [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-%    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s)
+%    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s, eta2)
 %
 % splitFodError finds the error implied by the Fiber Frame (FF) orientations
 % specified by ffAxes_v, where asymmetric (m ~= 0) terms in the estimated 
@@ -17,13 +17,14 @@ function [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
 %
 % Input arguments are:
 %
-%   ffAxes_v: (2*Nf) x 1 array of FF axis orientations, defined by the
+%   ffAxes_v: (2*Nf) x 1 array of FF axis nargsorientations, defined by the
 %       (eulerAlpha, eulerBeta) values that transform the lab frame (LF) 
 %       to the fiber frame (FF). The eulerAlpha value for the nth FF axis 
 %       ffAxes_v(n) and the eulerBeta value is given by ffAxes_v(Nf + n). 
 %   plmLab_v: nTerms x 1 column vector of the net LF FOD coefficients in 
 %       mNNpEvenReal1 format. 
 %   testRotFlag: 1 to show fiber FODs in FF and rotated to LF.
+%   eta2: Axial symmetry constraint. 5 by default.
 %
 % Output variables are:
 %
@@ -45,11 +46,13 @@ function [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
 %   n_m = getDirectionsWrapper(n)
 
 %% Setup parameters.
-
+if nargin < 5
+    eta2 = 5;
+end
 % Get useful constants:
 nTerms = length(plmLab_v);  % mNNpEvenReal1 format. 
 Nf = length(ffAxes_v)/2;      % Number of fiber axes.
-eta2 = 5;    % Regularization (penalty) term.
+% eta2 = 1;    % Regularization (penalty) term.
 
 % Get derived paramters. First, find lMax using 
 %   nTerms = lMax.*(lMax+3)/2 + l0Flag
@@ -183,17 +186,17 @@ plmPrime_m = reshape(plmPrime_v, nTerms, Nf); % Return one fiber FOD per column.
 yl0_0_v = getYl0para(lMax);
 yl0_90_v = getYl0perp(lMax);
 % % Get Yl0 at theta = 30 degrees (for l=0:2:lMax):
-% Yl0_30_v = getYl0(lMax, pi/6);     
-% yl0_30_v = zeros(nTerms, 1);
-% yl0_30_v(m_v == 0) = Yl0_30_v;     % Column vector in mNNpEvenReal1 format.
+Yl0_30_v = getYl0(lMax, pi/6);     
+yl0_30_v = zeros(nTerms, 1);
+yl0_30_v(m_v == 0) = Yl0_30_v;     % Column vector in mNNpEvenReal1 format.
 % % Get Yl0 at theta = 45 degrees (for l=0:2:lMax):
 % Yl0_45_v = getYl0(lMax, pi/4);     % Yl0 at theta = 45 degrees for l=0:2:lMax.
 % yl0_45_v = zeros(nTerms, 1);
 % yl0_45_v(m_v == 0) = Yl0_45_v;     % Column vector in mNNpEvenReal1 format.
 % % Get Yl0 at theta = 60 degrees (for l=0:2:lMax):
-% Yl0_60_v = getYl0(lMax, pi/3);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
-% yl0_60_v = zeros(nTerms, 1);
-% yl0_60_v(m_v == 0) = Yl0_60_v;     % Column vector in mNNpEvenReal1 format.
+Yl0_60_v = getYl0(lMax, pi/3);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
+yl0_60_v = zeros(nTerms, 1);
+yl0_60_v(m_v == 0) = Yl0_60_v;     % Column vector in mNNpEvenReal1 format.
 Yl0_15_v = getYl0(lMax, 15*pi/180);     % Yl0 at theta = 60 degrees for l=0:2:lMax.
 yl0_15_v = zeros(nTerms, 1);
 yl0_15_v(m_v == 0) = Yl0_15_v;     % Column vector in mNNpEvenReal1 format.
@@ -208,7 +211,7 @@ for fIndex = 1:Nf
     %fod30 = plmFF_v.' * yl0_30_v; % P(pi/6,0). % Note: ringing makes this
     %problematic.
     %fod45 = plmFF_v.' * yl0_45_v; % P(pi/4,0).
-    % fod60 = plmFF_v.' * yl0_60_v; % P(pi/3,0).
+    fod60 = plmFF_v.' * yl0_60_v; % P(pi/3,0).
     fod90 = plmFF_v.' * yl0_90_v; % P(pi/2,0).
     fod15 = plmFF_v.' * yl0_15_v;
     fod80 = plmFF_v.' * yl0_80_v;
@@ -262,13 +265,8 @@ penalty_p20 = max([0, ratio - 3])^2;
 
 % Get final SSE value. Penalty for |m| > 0 terms is part of plmPrime_v 
 % optimization:
-sse = fitCost + 1 * shapeCost + 2 * penalty_p20 + p00SignCost;
-% For debugging:
-if (testRotFlag == 1)
-    disp(['fitCost = ', num2str(fitCost/sse), '*SSE, shapeCost = ', ...
-        num2str(1*shapeCost/sse), '*SSE, penaltyCost = ', ...
-        num2str(2*penalty_p20/sse), '*SSE'])
-end
+sse = fitCost + 1 * shapeCost + p00SignCost + 2 * penalty_p20;
+
 
 % Return fractional error (includes fit and shape cost):
 switch fitCost_s
@@ -276,5 +274,29 @@ switch fitCost_s
         plmNorm2 = plmLab_v' * plmLab_v;
     case 'ang'
         plmNorm2 = plmLabAll_v' * plmLabAll_v;
+end
+
+% For debugging:
+if (testRotFlag == 1)
+    fprintf(['fitCost = %.4f, shapeCost = %.4f, penalty_p20 = %.4f, ' ...
+        'p00SignCost = %.4f, plmNorm2 = %.4f\n'], ...
+        fitCost, shapeCost, penalty_p20, p00SignCost, plmNorm2);
+    fprintf('fracFitError = %.4f\n', sqrt(sse/plmNorm2));
+    
+    nDirs = 1002;
+    n_m = getDirectionsWrapper(nDirs);
+    theta_v = acos(n_m(:, 3));
+    phi_v = atan2(n_m(:, 2), n_m(:, 1));
+    
+    plmLabModelAll_v = uniTrans2standard(plmLabModel_v, lMax);
+    fodLabModel_v = evalP2(theta_v, phi_v, plmLabModelAll_v.');
+    
+    plmLabAll_v = uniTrans2standard(plmLab_v, lMax);
+    fodLab_v = evalP2(theta_v, phi_v, plmLabAll_v.');
+    
+    angRelError = norm(fodLabModel_v - fodLab_v) / norm(fodLab_v);
+    
+    fprintf('SH relative error  = %.4e\n', sqrt(fitCost/plmNorm2));
+    fprintf('FOD angular error  = %.4e\n', angRelError);
 end
 fracFitError = sqrt(sse/plmNorm2);

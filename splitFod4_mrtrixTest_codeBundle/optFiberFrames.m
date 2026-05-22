@@ -1,5 +1,5 @@
-function [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v)
-% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v)
+function [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v, eta2)
+% Usage: [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_v, eta2)
 %
 % optFiberFrames optimizes the fiber frame (FF) orientations, given the
 % voxel-level FOD (in plmLab_v) and realistic constraints on the FF FODs.
@@ -16,6 +16,7 @@ function [xOpt_v, plmPrimeCor_m, solutions_sa] = optFiberFrames(xInit_v, plmLab_
 %                   (theta, phi) = (xInit_v(nSubFixels+n), xInit_v(n)).
 %   plmLab_v:   nTerms x 1 array of lab frame (LF) FOD coefficients (in
 %               mNNpEvenReal1 format) for given lMax.
+%   eta2: Axial symmetry constraint. 5 by default.
 %
 % Output variables:
 %
@@ -61,13 +62,13 @@ xub_v(1:nSubFixels) = (delta*pi/180) * ones(nSubFixels, 1);
 xub_v(nSubFixels + (1:nSubFixels)) = (delta*pi/180) * ones(nSubFixels, 1);
 % Define function to optimize:
 fitError = @(dOrient_v) splitFodErrorWrapper(xInit_v + dOrient_v, plmLab_v, ...
-    testRotFlag0, '');  % For fminsearch (simplex), simulanneal, GlobalSearch.
+    testRotFlag0, '', eta2);  % For fminsearch (simplex), simulanneal, GlobalSearch.
 fitErrorMS = @(x_v) splitFodErrorWrapper(x_v, plmLab_v, ...
-    testRotFlag0, '');  % For multistart.
+    testRotFlag0, '', eta2);  % For multistart.
 fitErrorSO = @(x_v) splitFodErrorWrapper(x_v(:), plmLab_v, ...
-    testRotFlag0, '');  % For multistart.
+    testRotFlag0, '', eta2);  % For multistart.
 % Find splitFodError at initial search point:
-fracFitErrorInit = splitFodErrorWrapper(xInit_v, plmLab_v, testRotFlag0, '');
+fracFitErrorInit = splitFodErrorWrapper(xInit_v, plmLab_v, testRotFlag0, '', eta2);
 disp(['   fractional fit error at initial search point = ', ...
     num2str(fracFitErrorInit)])
 
@@ -247,13 +248,13 @@ disp(['   Fractional error at optimized solution = ', ...
 % Get solution:
 if strcmp(search_s, 'multistart')
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ');
+        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ', eta2);
 elseif strcmp(search_s, 'surrogateopt')
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ');
+        splitFodError2(xOpt_v, plmLab_v, testRotFlag0, ' ', eta2);
 else
     [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-        splitFodError2(xInit_v + xOpt_v, plmLab_v, testRotFlag0, ' ');
+        splitFodError2(xInit_v + xOpt_v, plmLab_v, testRotFlag0, ' ', eta2);
 end
 
 % Correct p00 terms (this does not affect plmLabModel):
@@ -264,7 +265,7 @@ end
 
 %% Local functions.
 
-function fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, figName_s)
+function fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, figName_s, eta2)
 % Usage: fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, figName_s)
 %
 % splitFodErrorWrapper calls the function splitFodError2 and returns only
@@ -272,7 +273,7 @@ function fracFitError = splitFodErrorWrapper(ffAxes_v, plmLab_v, testRotFlag, fi
 %
 % Call splitFodError2:
 [fracFitError, fitCost, penaltyCost, plmLabModel_v, plmPrime_m] = ...
-    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s);
+    splitFodError2(ffAxes_v, plmLab_v, testRotFlag, figName_s, eta2);
 end
 
 function fracFitError = splitFodErrorWrapperIRLS(ffAxes_v, plmLab_v, testRotFlag, figName_s, W)
