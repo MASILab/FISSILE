@@ -44,23 +44,23 @@ ENTRYPOINT ["/app/fissile_compiled/run_fissile.sh", "/opt/matlabruntime/R2023a/"
 Build with:
 
 ```
-docker build -t fissile:v1.1.2 .
+docker build -t fissile:v1.1.3 .
 ```
 
 Run with:
 
 ```
-docker run --rm -it -v "$(pwd)/data:/data" fissile:v1.1.2 /data/test_input.mat /data/test_output.mat 5e-2 5 10 10
+docker run --rm -it -v "$(pwd)/data:/data" fissile:v1.1.3 /data/test_input.mat /data/test_output.mat 5e-2 5 10 10
 ```
 
 Convert to singularity:
 
 ```
-apptainer build fissile_v1.1.2.sif docker-daemon://fissile:v1.1.2
+apptainer build fissile_v1.1.3.sif docker-daemon://fissile:v1.1.3
 ```
 
 And run:
 
 ```
-apptainer run -e --contain -B "$(pwd)/data:/data" fissile_v1.1.2.sif /data/test_input.mat /data/test_output.mat 5e-2 5 10 10
+apptainer run -e --contain -B "$(pwd)/data:/data" fissile_v1.1.3.sif /data/test_input.mat /data/test_output.mat 5e-2 5 10 10
 ```

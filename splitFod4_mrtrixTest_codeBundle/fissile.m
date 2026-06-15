@@ -70,27 +70,39 @@ function fissile(input_file, output_file, fracFitErrorThresh, eta2, max_fibers, 
     parpool("Processes", n_jobs);
     parfor i = 1:n_iter
         fprintf('Progress: %3d%% (%d/%d)\n', round(100*(i-1)/size(signal,1)), i, size(signal,1));
-    
-        % Split into fibers
-        [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4_mrtrix(signal(i,:), fracFitErrorThresh, eta2, max_fibers);
-    
-        total_fod_c{i} = signal(i,:);
-        separate_fod_c{i} = plmPrimeCor_m';
-        n_subfixel = size(plmPrimeCor_m, 2);
-        est_theta_c{i} = xOpt_v(n_subfixel+1:end)';
-        est_phi_c{i} = xOpt_v(1:n_subfixel)';
-        est_v_c{i} = sqrt(4*pi)*plmPrimeCor_m(1,:);
 
+        if all(abs(signal(i, :)) <= 1e-6)
+            total_fod_c{i} = signal(i,:);
+            separate_fod_c{i} = signal(i, :);
+            rotate_separate_fod_c{i} = signal(i, :);
+            n_subfixel = 1;
+            est_theta_c{i} = 0;
+            est_phi_c{i} = 0;
+            est_v_c{i} = 1;
+        else
+        
+            % Split into fibers
+            [xOpt_v, plmPrimeCor_m, solutions_sa, xInit_v] = splitFod4_mrtrix(signal(i,:), fracFitErrorThresh, eta2, max_fibers);
+        
+            total_fod_c{i} = signal(i,:);
+            separate_fod_c{i} = plmPrimeCor_m';
+            n_subfixel = size(plmPrimeCor_m, 2);
+            est_theta_c{i} = xOpt_v(n_subfixel+1:end)';
+            est_phi_c{i} = xOpt_v(1:n_subfixel)';
+            est_v_c{i} = sqrt(4*pi)*plmPrimeCor_m(1,:);
+    
+    
+            rotate_separate_fod = zeros(size(plmPrimeCor_m));
+            for j = 1:size(plmPrimeCor_m, 2)
+                separate_fod_standard = mrtrix2standard(separate_fod_c{i}(j,:));
+                separate_fod = uniTrans2format(separate_fod_standard', 'mNNpEvenReal1');
+                lMax = sqrt(length(separate_fod_standard)) - 1;
+                separate_fod_rot = rotate_nnMpEvenRealRotation([-est_phi_c{i}(j), -est_theta_c{i}(j), 0], separate_fod);
+                rotate_separate_fod(:, j) = standard2mrtrix(uniTrans2standard(separate_fod_rot, lMax));
+            end
+            rotate_separate_fod_c{i} = rotate_separate_fod';
 
-        rotate_separate_fod = zeros(size(plmPrimeCor_m));
-        for j = 1:size(plmPrimeCor_m, 2)
-            separate_fod_standard = mrtrix2standard(separate_fod_c{i}(j,:));
-            separate_fod = uniTrans2format(separate_fod_standard', 'mNNpEvenReal1');
-            lMax = sqrt(length(separate_fod_standard)) - 1;
-            separate_fod_rot = rotate_nnMpEvenRealRotation([-est_phi_c{i}(j), -est_theta_c{i}(j), 0], separate_fod);
-            rotate_separate_fod(:, j) = standard2mrtrix(uniTrans2standard(separate_fod_rot, lMax));
         end
-        rotate_separate_fod_c{i} = rotate_separate_fod';
     end
     
     data = struct;
