@@ -47,3 +47,7 @@ Or as a singularity, available [here](https://doi.org/10.5281/zenodo.20044172) f
 ```
 apptainer run -e --contain -B "$(pwd)/data:/data" fissile_v1.1.3.sif /data/test_input.mat /data/test_output.mat 5e-2 5 10 10
 ```
+
+## Citation
+
+Adam M. Saunders, Gaurav Rudravaram, Michael E. Kim, Elyssa M. McMaster, Yifan Shuai, Warren Boschen, Sophie Lin, Suzana Herculano-Houzel, Daniel C. Colvin, Yurui Gao, Kurt G. Schilling, Adam W. Anderson, and Bennett Landman. "Separating mixtures of single-fiber orientation distributions for increased sensitivity to crossing white matter fibers.” [https://arxiv.org/abs/2610.20974](https://arxiv.org/abs/2610.20974).
